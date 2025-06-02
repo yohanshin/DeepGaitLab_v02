@@ -1,3 +1,22 @@
+# Custom
+*.png
+*.npy
+*.npz
+*.pt
+*.pkl
+*.mp4
+*.tar
+*.tar.gz
+test/
+outputs/
+dataset/
+datasets/
+experiments/
+checkpoints/
+yamls/
+wandb/
+tmp/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

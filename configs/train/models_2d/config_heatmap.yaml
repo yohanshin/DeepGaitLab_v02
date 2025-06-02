@@ -1,0 +1,68 @@
+defaults:
+  - _self_
+  - backbone: vitl
+  - model: pose_softargmax
+  - data: BEDLAM_WD_heatmap
+  - optimizer: adamw_cosinelr
+  - landmarks: surface
+
+use_mask_encoder: false
+embed_dim: ${backbone.embed_dim}
+landmark_type: ${landmarks.type}
+debug_mode: false
+scale_image: 2
+image_height_original: 256
+image_width_original: 192
+image_height: ${mult:${scale_image},${image_height_original}}
+image_width: ${mult:${scale_image},${image_width_original}}
+
+image_size:
+    - ${image_width}
+    - ${image_height}
+
+num_joints: ${landmarks.num_joints}
+total_num_joints: ${landmarks.total_num_joints}
+
+model_name: DenseLdmks2DHeatmap
+task: dense_landmarks_2d
+freeze_label: ${if:${model.freeze_backbone}, freeze_backbone, tune_backbone}
+exp_name: ${model.name}-${backbone.name}-${freeze_label}-${landmarks.type}-hw_${image_height}-${image_width}
+
+gpus_n: 1
+samples_per_gpu: ${if:${debug_mode}, ${div:20,${scale_image}}, ${div:48,2}}
+workers_per_gpu: ${if:${debug_mode}, 1, 10}
+val_dataloader:
+    samples_per_gpu: 32
+test_dataloader:
+    samples_per_gpu: 32
+
+strategy: auto
+log_steps: ${if:${debug_mode}, 1, 250}
+total_epochs: 7
+max_steps: 10000000
+
+loss_weights:
+  joints2d: ${if:${debug_mode}, 0.15, 100.0}
+  heatmap: ${if:${debug_mode}, 0.15, 100.0}
+  total: ${if:${debug_mode}, 0.5, 1.0}
+
+data_cfg:
+  image_size: ${image_size}
+
+label_path: "/is/cluster/fast/scratch/hcuevas/bedlam_lab/BEDLAM_MASKS_WD"
+
+# Train config ---------------------------------------
+work_dir: 'experiments'
+log_level: logging.INFO
+seed: 42
+deterministic: True # whether not to evaluate the checkpoint during training
+cudnn_benchmark: True # Use cudnn
+resume_from: "" # CKPT path
+launcher: 'none' # When distributed training ['none', 'pytorch', 'slurm', 'mpi']
+use_amp: True
+validate: True
+
+autoscale_lr: True # automatically scale lr with the number of gpus
+
+dist_params:
+  ...

@@ -1,0 +1,13 @@
+name: ViT-Huge
+type: ViT
+img_size: ${image_size}
+patch_size: 16
+embed_dim: 1280
+depth: 32
+num_heads: 16
+ratio: 1
+use_checkpoint: false
+mlp_ratio: 4
+qkv_bias: true
+drop_path_rate: 0.55
+pretrained_pth: /is/cluster/fast/sshin/checkpoints/ViTPose/vitpose-h-multi-coco.pth

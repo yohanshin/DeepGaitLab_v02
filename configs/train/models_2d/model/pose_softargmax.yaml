@@ -1,0 +1,19 @@
+name: pose_softargmax
+freeze_backbone: false
+use_mask: ${use_mask_encoder}
+joints_loss_after_n_iters: 500000000
+decoder:
+  layer_name: 'TopdownHeatmapSimpleHead'
+  in_channels: ${embed_dim}
+  out_channels: ${num_joints}
+  num_deconv_layers: 2
+  num_deconv_filters: [512, 512]
+  num_deconv_kernels: [4, 4]
+  visibility: true
+visibility_head:
+  d_model: ${embed_dim}
+  n_heads: 16
+  n_layers: 2
+  n_landmarks: ${num_joints}
+  transformer_dim_feedforward: 1024
+  dropout: 0.1

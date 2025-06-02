@@ -1,0 +1,23 @@
+chumpy @ git+https://github.com/mattloper/chumpy
+numpy==1.22.3
+yacs
+joblib
+scikit-image
+opencv-python
+imageio[ffmpeg]
+matplotlib
+smplx
+einops
+timm==0.4.9
+munkres
+xtcocotools>=1.8
+loguru
+setuptools==69.5.0
+tqdm
+gdown==4.6.0
+pytorch_lightning
+albumentations==1.4.21
+hydra-core
+webdataset
+markdown>=2.6.8
+wandb==0.19.11

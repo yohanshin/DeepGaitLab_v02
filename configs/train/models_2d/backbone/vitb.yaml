@@ -1,0 +1,13 @@
+name: ViT-Base
+type: ViT
+img_size: ${image_size}
+patch_size: 16
+embed_dim: 768
+depth: 12
+num_heads: 12
+ratio: 1
+use_checkpoint: false
+mlp_ratio: 4
+qkv_bias: true
+drop_path_rate: 0.3
+pretrained_pth: /is/cluster/fast/sshin/checkpoints/ViTPose/vitpose-b-multi-coco.pth

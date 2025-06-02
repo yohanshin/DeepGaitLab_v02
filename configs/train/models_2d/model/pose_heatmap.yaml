@@ -1,0 +1,31 @@
+name: pose_heatmap
+freeze_backbone: false
+joints_loss_after_n_iters: 5000
+backbone:
+  type: ViT
+  img_size: ${image_size}
+  patch_size: 16
+  embed_dim: 768
+  depth: 12
+  num_heads: 12
+  ratio: 1
+  use_checkpoint: false
+  mlp_ratio: 4
+  qkv_bias: true
+  drop_path_rate: 0.3
+use_mask: ${use_mask_encoder}
+decoder:
+  layer_name: 'TopdownHeatmapSimpleHead'
+  in_channels: 768
+  out_channels: ${num_joints}
+  num_deconv_layers: 2
+  num_deconv_filters: [256, 256]
+  num_deconv_kernels: [4, 4]
+visibility:
+  d_model: 768
+  n_heads: 8
+  n_layers: 6
+  n_landmarks: ${num_joints}
+  transformer_dim_feedforward: 2048
+  dropout: 0.1
+  visibility: true

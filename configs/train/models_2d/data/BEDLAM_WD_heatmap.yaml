@@ -1,0 +1,52 @@
+train:
+    type: BEDLAM_WD
+    task: landmark_2d
+    landmark_type: ${landmark_type}
+    normalize_plus_min_one: true
+    is_train: true
+    label_path: ${label_path}
+    data_cfg: ${data_cfg}
+    image_width: ${image_size[0]}
+    image_height: ${image_size[1]}
+    scale_factor: 0.3
+    trans_factor: 0.02
+    flip_prob: 0.0
+    rotate_prob: 0.6
+    trans_prob: 0.5
+    rotation_factor: 30
+    half_body_prob: 0.0
+    use_different_joints_weight: true
+    extreme_cropping_prob: ${if:${eq:${landmark_type},surface},0.2,0.0}
+    img_aug_prob: 0.9
+    heatmap_sigma: 2
+    soft_nms: false
+    num_joints: ${num_joints}
+    target_type: heatmap
+    total_num_joints: ${total_num_joints}
+
+val:
+    type: BEDLAM_WD
+    task: landmark_2d
+    landmark_type: ${landmark_type}
+    normalize_plus_min_one: true
+    is_train: false
+    label_path: ${label_path}
+    data_cfg: ${data_cfg}
+    # pipeline: ${val_pipeline}
+    image_width: ${image_size[0]}
+    image_height: ${image_size[1]}
+    scale_factor: 0.3
+    trans_factor: 0.02
+    flip_prob: 0.0
+    rotate_prob: 0.6
+    trans_prob: 0.5
+    rotation_factor: 30
+    half_body_prob: 0.0
+    use_different_joints_weight: true
+    extreme_cropping_prob: 0.0
+    img_aug_prob: 0.0
+    heatmap_sigma: 2
+    soft_nms: false
+    num_joints: ${num_joints}
+    target_type: heatmap
+    total_num_joints: ${total_num_joints}
