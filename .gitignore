@@ -9,8 +9,6 @@
 *.tar.gz
 test/
 outputs/
-dataset/
-datasets/
 experiments/
 checkpoints/
 yamls/
