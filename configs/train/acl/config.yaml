@@ -1,0 +1,148 @@
+use_mask_encoder: true
+embed_dim: ${backbone.embed_dim}
+landmark_type: ${landmarks.type}
+debug_mode: false
+scale_image: 2
+image_height_original: 256
+image_width_original: 192
+image_height: ${mult:${scale_image},${image_height_original}}
+image_width: ${mult:${scale_image},${image_width_original}}
+image_size:
+- ${image_width}
+- ${image_height}
+num_joints: ${landmarks.num_joints}
+total_num_joints: ${landmarks.total_num_joints}
+model_name: DenseLdmks2DViT
+task: dense_landmarks_2d
+freeze_label: ${if:${model.freeze_backbone}, freeze, tune}
+mask_label: ${if:${use_mask_encoder}, mask, Xmask}
+exp_name: ${model.name}-${backbone.name}-${freeze_label}-${mask_label}-${landmarks.type}
+gpus_n: 1
+samples_per_gpu: ${if:${debug_mode}, ${div:20,${scale_image}}, ${div:48,2}}
+workers_per_gpu: ${if:${debug_mode}, 1, 10}
+val_dataloader:
+  samples_per_gpu: 32
+test_dataloader:
+  samples_per_gpu: 32
+strategy: auto
+log_steps: ${if:${debug_mode}, 1, 250}
+total_epochs: 7
+max_steps: ${div:300000,${gpus_n}}
+loss_weights:
+  joints2d: ${if:${debug_mode}, 0.15, 100.0}
+  total: ${if:${debug_mode}, 0.5, 1.0}
+data_cfg:
+  image_size: ${image_size}
+label_path: /is/cluster/fast/scratch/hcuevas/bedlam_lab/BEDLAM_MASKS_WD
+work_dir: experiments
+log_level: logging.INFO
+seed: 42
+deterministic: true
+cudnn_benchmark: true
+resume_from: ''
+launcher: none
+use_amp: true
+validate: true
+autoscale_lr: true
+dist_params: '...'
+backbone:
+  name: ViT-Large
+  type: ViT
+  img_size: ${image_size}
+  patch_size: 16
+  embed_dim: 1024
+  depth: 24
+  num_heads: 16
+  ratio: 1
+  use_checkpoint: false
+  mlp_ratio: 4
+  qkv_bias: true
+  drop_path_rate: 0.5
+  pretrained_pth: /is/cluster/fast/sshin/checkpoints/ViTPose/vitpose-l-multi-coco.pth
+model:
+  name: pose_detr
+  freeze_backbone: false
+  use_mask: ${use_mask_encoder}
+  decoder:
+    layer_name: DETRDecoder
+    d_model: ${embed_dim}
+    n_heads: 8
+    n_layers: 6
+    n_landmarks: ${num_joints}
+    transformer_dim_feedforward: 2048
+    ldmks_dim: 2
+    dropout: 0.1
+    uncertainty: true
+    visibility: true
+data:
+  train:
+    type: BEDLAM_WD
+    task: landmark_2d
+    landmark_type: ${landmark_type}
+    normalize_plus_min_one: true
+    is_train: true
+    label_path: ${label_path}
+    data_cfg: ${data_cfg}
+    image_width: ${image_size[0]}
+    image_height: ${image_size[1]}
+    scale_factor: 0.3
+    trans_factor: 0.02
+    flip_prob: 0.0
+    rotate_prob: 0.6
+    trans_prob: 0.5
+    rotation_factor: 30
+    half_body_prob: 0.0
+    use_different_joints_weight: true
+    extreme_cropping_prob: ${if:${eq:${landmark_type},surface},0.2,0.0}
+    img_aug_prob: 0.9
+    heatmap_sigma: 2
+    soft_nms: false
+    num_joints: ${num_joints}
+    total_num_joints: ${total_num_joints}
+  val:
+    type: BEDLAM_WD
+    task: landmark_2d
+    landmark_type: ${landmark_type}
+    normalize_plus_min_one: true
+    is_train: false
+    label_path: ${label_path}
+    data_cfg: ${data_cfg}
+    image_width: ${image_size[0]}
+    image_height: ${image_size[1]}
+    scale_factor: 0.3
+    trans_factor: 0.02
+    flip_prob: 0.0
+    rotate_prob: 0.6
+    trans_prob: 0.5
+    rotation_factor: 30
+    half_body_prob: 0.0
+    use_different_joints_weight: true
+    extreme_cropping_prob: 0.0
+    img_aug_prob: 0.9
+    heatmap_sigma: 2
+    soft_nms: false
+    num_joints: ${num_joints}
+    total_num_joints: ${total_num_joints}
+optimizer:
+  optimizer:
+    type: AdamW
+    lr: 0.0001
+    betas:
+    - 0.9
+    - 0.999
+    weight_decay: ${if:${debug_mode}, 0.0, 1e-4}
+    lr_backbone: 1.0e-05
+  lr_config:
+    policy: cosine
+    warmup: true
+    warmup_iters: 500
+    warmup_ratio: 0.001
+    T_max: ${max_steps}
+    eta_min: 0.0
+landmarks:
+  type: anatomy_v0
+  num_joints: 58
+  total_num_joints: 58
+demo:
+  n_parts: 1
+  mod_part: 0
