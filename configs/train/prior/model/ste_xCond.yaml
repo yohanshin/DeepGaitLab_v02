@@ -1,0 +1,15 @@
+name: ste_wo_cond
+encoder:
+  layer_name: SpatioTemporalEncoder
+  d_model: 256
+  n_heads: 8
+  n_layers: 6
+  n_landmarks: ${num_joints}
+  transformer_dim_feedforward: 2048
+  ldmks_dim: 3
+  dropout: 0.1
+diffusion:
+  noise_schedule: cosine
+  sigma_small: true
+  num_steps: 1000
+  timestep_respacing_eval: ddim5

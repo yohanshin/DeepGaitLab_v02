@@ -1,0 +1,24 @@
+name: pose_multiframe
+freeze_backbone: false
+use_mask: ${use_mask_encoder}
+decoder:
+  layer_name: DETRDecoder
+  d_model: ${embed_dim}
+  n_heads: 8
+  n_layers: 6
+  n_landmarks: ${num_joints}
+  transformer_dim_feedforward: 2048
+  ldmks_dim: 2
+  dropout: 0.1
+  uncertainty: true
+  visibility: false
+integrator:
+  d_model: ${embed_dim}
+  n_heads: 8
+  n_global_tokens: 16
+  n_layers: 2
+  transformer_dim_feedforward: 1024
+  dropout: 0.2
+  width: ${div:${image_height}, 16}
+  height: ${div:${image_width}, 16}
+  max_num_frames: ${max_num_frames}

@@ -1,0 +1,51 @@
+defaults:
+  - _self_
+  - model: ste_xCond
+  - data: AMASS
+  - optimizer: adamw_cosinelr
+  - landmarks: anatomy_v0
+  - demo: default
+
+landmark_type: ${landmarks.type}
+debug_mode: false
+
+num_joints: ${landmarks.num_joints}
+total_num_joints: ${landmarks.total_num_joints}
+
+task: prior_landmark_3d
+exp_name: ${model.name}-${landmarks.type}
+
+gpus_n: 1
+samples_per_gpu: ${if:${debug_mode}, 4, 64}
+workers_per_gpu: ${if:${debug_mode}, 1, 10}
+val_dataloader:
+    samples_per_gpu: 32
+test_dataloader:
+    samples_per_gpu: 32
+
+strategy: auto
+log_steps: ${if:${debug_mode}, 1, 250}
+total_epochs: 7
+max_steps: ${div:200000,${gpus_n}}
+
+loss_weights:
+  joints2d: ${if:${debug_mode}, 0.15, 100.0}
+  total: ${if:${debug_mode}, 0.5, 1.0}
+
+label_path: "/is/cluster/fast/scratch/hcuevas/bedlam_lab/BEDLAM_MASKS_WD"
+
+# Train config ---------------------------------------
+work_dir: 'experiments'
+log_level: logging.INFO
+seed: 42
+deterministic: True # whether not to evaluate the checkpoint during training
+cudnn_benchmark: True # Use cudnn
+resume_from: "" # CKPT path
+launcher: 'none' # When distributed training ['none', 'pytorch', 'slurm', 'mpi']
+use_amp: True
+validate: True
+
+autoscale_lr: True # automatically scale lr with the number of gpus
+
+dist_params:
+  ...

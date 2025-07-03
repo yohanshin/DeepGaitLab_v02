@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from einops import rearrange
-from ..modules.transformer_detr import TransformerDecoder, TransformerDecoderLayer
+from torch.nn import TransformerDecoder, TransformerDecoderLayer
 
 
 class MLP(nn.Module):
@@ -50,33 +50,40 @@ class DecoderPerLandmark(nn.Module):
         normalize_before = False
         self.query_embed = nn.Embedding(n_landmarks, d_model)
 
-        decoder_layer = TransformerDecoderLayer(d_model, n_heads, transformer_dim_feedforward,
-                                                dropout, activation, normalize_before)
+        decoder_layer = TransformerDecoderLayer(d_model=d_model, 
+                                                nhead=n_heads, 
+                                                dim_feedforward=transformer_dim_feedforward,
+                                                dropout=dropout, 
+                                                activation=activation, 
+                                                norm_first=not normalize_before,
+                                                batch_first=False)
         decoder_norm = nn.LayerNorm(d_model)
-        self.decoder_detr = TransformerDecoder(decoder_layer, n_layers, decoder_norm,
-                                          return_intermediate=self.return_intermediate_dec)
+        self.decoder_detr = TransformerDecoder(decoder_layer=decoder_layer, 
+                                               num_layers=n_layers, 
+                                               norm=decoder_norm)
         self.landmarks = MLP(d_model, d_model, self.output_dim, 3)
         if self.visibility:
             self.vis_prob = nn.Linear(d_model, 1)
 
 
-    def forward(self, src, pos_embed):
+    def forward(self, src, pos_embed, aux_feature=None):
         patch_pos_embed = pos_embed[:, 1:]
         bs = src.shape[0]
         patch_pos_embed = patch_pos_embed.permute(1, 0, 2)
         query_embed = self.query_embed.weight
         query_embed = query_embed.unsqueeze(1).repeat(1, bs, 1)
 
-        tgt = torch.zeros_like(query_embed)
-        src = rearrange(src, 'B D H W -> (H W) B D')
+        src = rearrange(src, 'B D H W -> (H W) B D') + patch_pos_embed
+        if aux_feature is not None:
+            src = torch.cat([src, aux_feature], dim=0)
 
-        hs = self.decoder_detr(tgt, src, memory_key_padding_mask=None, pos=patch_pos_embed, query_pos=query_embed)
-        hs = hs.transpose(1, 2) #, memory.permute(1, 2, 0).view(bs, c, h, w)
+        hs = self.decoder_detr(query_embed, src, memory_key_padding_mask=None)
+        hs = rearrange(hs, 'J B D -> B J D')
 
         # Construct predictions
         pred = dict(
-            joints2d=self.landmarks(hs)[-1],
-            visibility=self.vis_prob(hs)[-1] if self.visibility else None,
+            joints2d=self.landmarks(hs),
+            visibility=self.vis_prob(hs) if self.visibility else None,
         )
 
         return pred

@@ -12,6 +12,7 @@ import omegaconf
 from omegaconf import OmegaConf, DictConfig
 import wandb
 from datetime import datetime
+from hydra.core.hydra_config import HydraConfig
 import numpy as np
 
 torch.utils.data._utils.worker.IS_DAEMON = False
@@ -49,9 +50,12 @@ def main(cfg: DictConfig):
     exp_name = cfg.exp_name + '_' + timestamp if not cfg.debug_mode else "debug"
     work_dir = osp.join(CUR_PATH, cfg.work_dir, 'train', 'regressor_2d', exp_name)
     log_dir = osp.join(work_dir, 'logs')
-    viz_dir = osp.join(work_dir, 'viz')
+    
     os.makedirs(log_dir, exist_ok=True)
+    run_dir = HydraConfig.get().runtime.output_dir
+    viz_dir = osp.join(work_dir, 'viz')
     os.makedirs(viz_dir, exist_ok=True)
+    os.system(f"cp {run_dir}/.hydra/config.yaml {work_dir}/config.yaml")
 
     logger.add(
         os.path.join(log_dir, 'train.log'),
@@ -76,7 +80,10 @@ def main(cfg: DictConfig):
     )
 
     experiment_loggers.append(tb_logger)
-    wandb_logger = WandbLogger(project="DeepGaitLab")
+    project = "Debug" if cfg.debug_mode else "DeepGaitLab"
+    tag1 = exp_name.replace('_' + timestamp, "")
+    tag2 = timestamp
+    wandb_logger = WandbLogger(project=project, tags=[tag1, tag2])
     wandb_logger.log_hyperparams(omegaconf.OmegaConf.to_container(
         cfg, resolve=True, throw_on_missing=True
     ))

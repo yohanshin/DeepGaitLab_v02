@@ -5,6 +5,7 @@ https://github.com/mkocabas/EpipolarPose/blob/master/lib/utils/img_utils.py
 import torch
 import numpy as np
 import cv2
+import random
 import albumentations as A
 from albumentations import ImageOnlyTransform
 
@@ -26,6 +27,15 @@ def xyxy2cs(bbox, aspect_ratio, pixel_std, scale_factor=0.75):
         scale = scale * scale_factor
 
     return center, scale
+
+def cs2xyxy(center, scale, pixel_std):
+    w = scale[0] * pixel_std
+    h = scale[1] * pixel_std
+    x1 = center[0] - w * 0.5
+    y1 = center[1] - h * 0.5
+    x2 = x1 + w
+    y2 = y1 + h
+    return np.array([x1, y1, x2, y2])
 
 
 def extreme_cropping(joints, body_parts_dict, img_w, img_h):
@@ -57,7 +67,11 @@ def extreme_cropping(joints, body_parts_dict, img_w, img_h):
     return bbox, rescale
 
 
-def augment_image(image):
+def augment_image(image, seed=None):
+    if seed is not None:
+        np.random.seed(seed)
+        random.seed(seed)
+
     aug_comp = [A.Downscale(0.5, 0.9, interpolation=0, p=0.1),
                 A.ImageCompression(20, 100, p=0.1),
                 A.RandomRain(blur_value=4, p=0.1),

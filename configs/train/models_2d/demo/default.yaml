@@ -1,0 +1,7 @@
+input_video: ""
+output_dir: ""
+bbox_pth: ""
+mask_dir: ""
+visualize: False
+n_parts: 1
+mod_part: 0

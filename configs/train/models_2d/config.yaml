@@ -4,9 +4,10 @@ defaults:
   - model: pose_detr
   - data: BEDLAM_WD
   - optimizer: adamw_cosinelr
-  - landmarks: surface
+  - landmarks: anatomy_v0
+  - demo: default
 
-use_mask_encoder: false
+use_mask_encoder: true
 embed_dim: ${backbone.embed_dim}
 landmark_type: ${landmarks.type}
 debug_mode: false
@@ -25,8 +26,9 @@ total_num_joints: ${landmarks.total_num_joints}
 
 model_name: DenseLdmks2DViT
 task: dense_landmarks_2d
-freeze_label: ${if:${model.freeze_backbone}, freeze_backbone, tune_backbone}
-exp_name: ${model.name}-${backbone.name}-${freeze_label}-${landmarks.type}-hw_${image_height}-${image_width}
+freeze_label: ${if:${model.freeze_backbone}, freeze, tune}
+mask_label: ${if:${use_mask_encoder}, mask, Xmask}
+exp_name: ${model.name}-${backbone.name}-${freeze_label}-${mask_label}-scalex${scale_image}-${landmarks.type}
 
 gpus_n: 1
 samples_per_gpu: ${if:${debug_mode}, ${div:20,${scale_image}}, ${div:48,2}}
@@ -39,7 +41,7 @@ test_dataloader:
 strategy: auto
 log_steps: ${if:${debug_mode}, 1, 250}
 total_epochs: 7
-max_steps: 10000000
+max_steps: ${div:300000,${gpus_n}}
 
 loss_weights:
   joints2d: ${if:${debug_mode}, 0.15, 100.0}

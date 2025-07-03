@@ -1,0 +1,15 @@
+optimizer:
+  type: AdamW
+  lr: 1e-4
+  lr_backbone: 1e-5
+  lr_integrator: 1e-4
+  betas: [0.9, 0.999]
+  weight_decay: ${if:${debug_mode}, 0.0, 1e-4}
+
+lr_config:
+  policy: cosine
+  warmup: true
+  warmup_iters: 500
+  warmup_ratio: 0.001
+  T_max: ${max_steps}
+  eta_min: 0.0

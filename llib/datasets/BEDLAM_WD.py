@@ -181,7 +181,7 @@ class BEDLAM_WD(Dataset):
 
     def process_webdataset_tar_item(self, data, train):
         joints_data = {}
-        image = data['jpg'].copy()
+        image = data['jpg'].copy() # Load in RGB format
         mask = data['mask.jpg'].copy()
         person_idx = int(data["data.pyd"]['person_idx'])
         img_name = data['__key__']
@@ -293,21 +293,14 @@ class BEDLAM_WD(Dataset):
 
         # get joints outside the image
         target_weight = valid_joints.copy().astype(np.float32)
-        # if joints[valid_joints[:,0]==0].shape[0] > 0:
-        #     # normalize joints outside the image to [-1, 1]
-        #     outside_joints = 2*(joints[valid_joints[:,0]==0]/self.image_size - 0.5)
-        #     # calculate the distance of the joints to the center
-        #     outside_joints = np.linalg.norm(outside_joints, axis=1)
-        #     beta = 2. #0.25 #4
-        #     outside_joints= np.exp(-beta*np.abs(outside_joints-1))
-        #     target_weight[valid_joints[:,0]==0, 0] = outside_joints
-
-        # if True: #"vertex_idx" in self.labels:
-        #     for key, val in self.body_parts_dict.items():
-        #         # add 1 to the joints like hands, feet and head
-        #         if valid_joints[val].sum() > 0 and key in ["left_hand", "right_hand", "left_feet", "right_feet"]:
-        #             target_weight[val] = target_weight[val] + target_weight[val] #valid_joints[val] #(valid_joints[val, 0] >= 1) * 1
-        #             # target_weight[val] += 1
+        if joints[valid_joints[:,0]==0].shape[0] > 0:
+            # normalize joints outside the image to [-1, 1]
+            outside_joints = 2*(joints[valid_joints[:,0]==0]/self.image_size - 0.5)
+            # calculate the distance of the joints to the center
+            outside_joints = np.linalg.norm(outside_joints, axis=1)
+            beta = 2. #0.25 #4
+            outside_joints= np.exp(-beta*np.abs(outside_joints-1))
+            target_weight[valid_joints[:,0]==0, 0] = outside_joints
 
         if self.target_type == "keypoints":
             target = np.array([0])

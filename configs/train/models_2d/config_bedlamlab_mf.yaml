@@ -1,0 +1,70 @@
+defaults:
+  - _self_
+  - backbone: vitl
+  - model: pose_multiframe
+  - data: BEDLAMLab_MF
+  - optimizer: adamw_cosinelr_bedlamlab_mf
+  - landmarks: anatomy_v0
+
+use_mask_encoder: true
+embed_dim: ${backbone.embed_dim}
+landmark_type: ${landmarks.type}
+debug_mode: false
+scale_image: 2
+image_height_original: 256
+image_width_original: 192
+image_height: ${mult:${scale_image},${image_height_original}}
+image_width: ${mult:${scale_image},${image_width_original}}
+max_num_frames: 16
+
+image_size:
+    - ${image_width}
+    - ${image_height}
+
+num_joints: ${landmarks.num_joints}
+total_num_joints: ${landmarks.total_num_joints}
+
+model_name: DenseLdmks2DViT
+task: dense_landmarks_2d
+freeze_label: ${if:${model.freeze_backbone}, freeze, tune}
+mask_label: ${if:${use_mask_encoder}, mask, Xmask}
+exp_name: ${model.name}-${backbone.name}-${freeze_label}-${mask_label}-scalex${scale_image}-${landmarks.type}
+
+gpus_n: 1
+samples_per_gpu: 2
+workers_per_gpu: ${if:${debug_mode}, 1, 10}
+val_dataloader:
+    samples_per_gpu: 4
+test_dataloader:
+    samples_per_gpu: 4
+
+strategy: auto
+log_steps: ${if:${debug_mode}, 1, 250}
+total_epochs: 7
+max_steps: ${div:${div:50000,${gpus_n}},${scale_image}}
+
+loss_weights:
+  joints2d: ${if:${debug_mode}, 0.15, 100.0}
+  total: ${if:${debug_mode}, 0.5, 1.0}
+  velocity: 0.00001
+
+data_cfg:
+  image_size: ${image_size}
+
+label_path: datasets/bedlamlab3d_cmu_processed_${landmarks.type}.pth
+
+# Train config ---------------------------------------
+work_dir: 'experiments'
+log_level: logging.INFO
+seed: 42
+deterministic: True # whether not to evaluate the checkpoint during training
+cudnn_benchmark: True # Use cudnn
+resume_from: "" # CKPT path
+launcher: 'none' # When distributed training ['none', 'pytorch', 'slurm', 'mpi']
+use_amp: True
+validate: True
+
+autoscale_lr: True # automatically scale lr with the number of gpus
+
+dist_params:
+  ...

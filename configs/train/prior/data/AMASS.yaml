@@ -1,0 +1,8 @@
+train:
+    type: BEDLAM
+    task: landmark_2d
+    landmark_type: ${landmark_type}
+    is_train: true
+    window_size: 51
+    prompt_frames: 1
+    label_pth: 'datasets/parsed_data/amass_smplx.pth'

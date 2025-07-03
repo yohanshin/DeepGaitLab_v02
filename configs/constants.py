@@ -77,3 +77,6 @@ class PATHS:
 
     SMPLX2SMPL = f'{BODY_MODEL_DIR}/smplx2smpl.pkl'
     DOWNSAMPLE_MAT = f'{BODY_MODEL_DIR}/downsample_mat_smplx.pkl'
+    
+    AMASS_BASE_DIR = "/fast/sshin/data/AMASS/SMPLX+G"
+    AMASS_PARSED_LABEL_PTH = "datasets/parsed_data/amass_smplx.pth"

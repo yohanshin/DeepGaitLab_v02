@@ -56,14 +56,16 @@ def main(cfg: DictConfig):
 
     for joint, image_pth in (pbar := tqdm(zip(joints_list, image_pth_list), total=len(joints_list), dynamic_ncols=True)):
         cvimg = cv2.imread(image_pth)
+        cvimg = cv2.cvtColor(cvimg, cv2.COLOR_BGR2RGB)
         img_size = cvimg.shape[:2]
         xyxy, valid = tools.kp2xyxy(joint[None], img_size, aspect_ratio=aspect_ratio)
 
         if isinstance(valid, bool):
             continue
 
-        center, scale = tools.xyxy2cs(xyxy[0], aspect_ratio, pixel_std=200.0, scale_factor=1.0)
-        scale = scale.max()
+        # center, scale = tools.xyxy2cs(xyxy[0], aspect_ratio, pixel_std=200.0, scale_factor=1.0)
+        center, scale = tools.xyxy2cs(xyxy[0], aspect_ratio, pixel_std=200.0)
+        scale = scale.min()
         img_tensor = tools.process_cvimg(cvimg.copy(), center, scale, cfg.image_size)
         img_tensor = torch.from_numpy(img_tensor).float().to(device)
 
@@ -82,7 +84,7 @@ def main(cfg: DictConfig):
             y = int(xy[1])
             cv2.circle(cvimg, (x, y), radius=2, color=(0, 255, 0), thickness=-1)
 
-        cv2.imwrite(os.path.join(vis_dir, os.path.basename(image_pth)), cvimg)
+        cv2.imwrite(os.path.join(vis_dir, os.path.basename(image_pth)), cv2.cvtColor(cvimg, cv2.COLOR_RGB2BGR))
 
 
 if __name__ == '__main__':

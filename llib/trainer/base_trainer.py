@@ -5,6 +5,8 @@ import pytorch_lightning as pl
 from pytorch_lightning.loggers import WandbLogger
 
 from llib.datasets.BEDLAM_WD import MixedWebDataset
+from llib.datasets.BEDLAMLab import BEDLAMLABDataset
+from llib.datasets.IMOVE import IMOVEDataset
 
 class BaseTrainer(pl.LightningModule):
     def __init__(self, cfg):
@@ -16,10 +18,11 @@ class BaseTrainer(pl.LightningModule):
         self.lr_cfg = cfg.optimizer.lr_config
         self.train_data_cfg = cfg.data['train']
         self.val_data_cfg = cfg.data['val'] if 'val' in cfg.data else None
-        self.freeze_backbone = cfg.model['freeze_backbone']
+        self.freeze_backbone = cfg.model.get('freeze_backbone', False)
 
         self.backbone = None
         self.decoder = None
+        self.mask_embed = None
         self.integrator = None
 
     def configure_optimizers(self):
@@ -27,9 +30,13 @@ class BaseTrainer(pl.LightningModule):
             {'params': self.decoder.parameters()},
         ]
 
+        if self.mask_embed is not None:
+            param_groups.append(
+                {'params': self.mask_embed.parameters()}
+            )
         if self.integrator is not None:
             param_groups.append(
-                {'params': self.integrator.parameters()}
+                {'params': self.integrator.parameters(), 'lr': self.optimizer_cfg.get('lr_integrator', self.optimizer_cfg['lr'])}
             )
         if not self.freeze_backbone:
             param_groups.append(
@@ -79,12 +86,9 @@ class BaseTrainer(pl.LightningModule):
     def setup(self, stage=None):#prepare_data(self):
         if stage == 'fit' or stage is None:
             if self.train_data_cfg['type'] == 'BEDLAMLab':
-                raise NotImplementedError(f"Dataset type {self.train_data_cfg['type']} not implemented yet!")
-                # self.train_ds = BEDLAMLABDataset(
-                #                                 is_train=True,
-                #                                 **self.train_data_cfg)
-                # self.val_ds = None
-
+                self.train_ds = BEDLAMLABDataset(**self.train_data_cfg)
+                self.val_ds = IMOVEDataset(**self.val_data_cfg)
+                
             elif self.train_data_cfg['type'] == 'BEDLAM_WD':
                 dinominator = max(1, self.cfg.workers_per_gpu*self.cfg.gpus_n)
                 self.train_ds = MixedWebDataset(self.train_data_cfg,
@@ -93,8 +97,9 @@ class BaseTrainer(pl.LightningModule):
                 print("Number of iterations per epoch: ", self.train_ds.nsamples,
                       np.ceil(1_000_000/dinominator))
 
-                self.val_ds = MixedWebDataset(self.val_data_cfg,
-                                              is_train=False,)
+                # self.val_ds = MixedWebDataset(self.val_data_cfg,
+                #                               is_train=False,)
+                self.val_ds = torch.utils.data.TensorDataset(torch.empty(0))
             else:
                 raise NotImplementedError(f"Dataset type {self.train_data_cfg['type']} not implemented yet!")
 
@@ -124,7 +129,7 @@ class BaseTrainer(pl.LightningModule):
         self.val_ds = self.val_dataset()
         return torch.utils.data.DataLoader(
             self.val_ds,
-            batch_size=16,
+            batch_size=4,
             num_workers=min(self.cfg.workers_per_gpu, 2),
             pin_memory=True
         )

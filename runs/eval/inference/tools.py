@@ -78,7 +78,7 @@ def convert_cvimg_to_tensor(cvimg: np.array):
     return img
 
 
-def process_cvimg(cvimg, c, s, image_size, pixel_std=200.0):
+def process_cvimg(cvimg, c, s, image_size, pixel_std=200.0, transform_only=False):
     mean = 255 * np.array([0.485, 0.456, 0.406])
     std = 255 * np.array([0.229, 0.224, 0.225])
     
@@ -89,6 +89,9 @@ def process_cvimg(cvimg, c, s, image_size, pixel_std=200.0):
         (int(image_size[0]), int(image_size[1])),
         flags=cv2.INTER_LINEAR
     )
+    
+    if transform_only: return image
+    
     image  = convert_cvimg_to_tensor(image)
     image = (image - mean[:, None, None]) / std[:, None, None]
     return image
@@ -105,3 +108,46 @@ def convert_kps_to_full_img(kps, c, s, image_size, pixel_std=200.0):
     kps_cvt = kps_hom @ trans.T
     kps[:, :2] = kps_cvt[:, :2]
     return kps
+
+
+def convert_kps_to_crop_img(kps, c, s, image_size, pixel_std=200.0):
+    trans = get_affine_transform(c, s, pixel_std, 0, image_size, inv=0)
+    kps_hom = kps.copy()
+    kps_hom[:, -1] = 1.0
+    kps_cvt = kps_hom @ trans.T
+    kps[:, :2] = kps_cvt[:, :2]
+    return kps
+
+
+from configs.landmarks import surface, anatomy_v0
+left_idxs = []
+right_idxs = []
+mid_idxs = []
+
+def draw_points(cfg, pred_joints2d, img, scale, bbox=None):
+    global left_idxs, right_idxs, mid_idxs
+    
+    if not left_idxs:  # Check if lists are empty instead of None
+        if cfg.landmarks.type == "surface":
+            flip_pairs = surface.flip_pairs
+        elif cfg.landmarks.type == "anatomy_v0":
+            flip_pairs = anatomy_v0.flip_pairs
+        for pair in flip_pairs:
+            left_idxs.append(pair[0])
+            right_idxs.append(pair[1])
+        mid_idxs = list(set(range(pred_joints2d.shape[0])) - set(left_idxs) - set(right_idxs))
+
+    radius = max(1, int(1.5 * scale / 384))
+    for idx, xy in enumerate(pred_joints2d):
+        x = int(xy[0])
+        y = int(xy[1])
+
+        if idx in left_idxs:
+            color = (255, 0, 0)
+        elif idx in right_idxs:
+            color = (0, 0, 255)
+        elif idx in mid_idxs:
+            color = (0, 255, 0)
+        cv2.circle(img, (x, y), radius=radius, color=color, thickness=-1)
+
+    return img

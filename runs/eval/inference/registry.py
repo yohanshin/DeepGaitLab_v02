@@ -10,8 +10,12 @@ def load_model(cfg, device):
         from llib.trainer.detectors.heatmap import DenseKPDetector as ModelCls
     elif cfg.model.name == "pose_softargmax":
         from llib.trainer.detectors.heatmap import DenseKPDetector as ModelCls
+    elif cfg.model.name == "pose_multiview":
+        from llib.trainer.lab_specific.multiview import DenseKPRegressor as ModelCls
+    elif cfg.model.name == "ste_wo_cond":
+        from llib.trainer.diffusion.ldmks_prior import DiffusionTrainer as ModelCls
 
-    return ModelCls(cfg).to(device)
+    return ModelCls(cfg, device=device).to(device)
 
 
 def load_checkpoint(model, ckpt_dir):

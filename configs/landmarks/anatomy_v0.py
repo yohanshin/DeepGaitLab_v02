@@ -39,3 +39,4 @@ right_idx =[marker_names.index(m) for m in right_names]
 flip_pairs = [[left_i, right_i] for left_i, right_i in zip(left_idx, right_idx)]
 
 subsample_pts_fn = "/is/cluster/fast/sshin/data/body_models/osim_related/wo_upper_body/smplx_to_dgl.pkl"
+center_idxs = [marker_names.index(name) for name in ['RHJC', 'LHJC']]
